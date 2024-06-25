@@ -9914,5 +9914,21 @@ namespace DSPRE {
             Helpers.statusLabelMessage();
             Update();
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //var buildingsList = GetBuildingsList(false);
+
+            for (int i = 0; i < currentMapFile.buildings.Count; i++)
+            {
+                currentMapFile.buildings[i].modelID = (uint)buildIndexComboBox.SelectedIndex;
+                currentMapFile.buildings[i].LoadModelData(romInfo.GetBuildingModelsDirPath(interiorbldRadioButton.Checked));
+                var b = currentMapFile.buildings[i];
+                float fullXcoord = b.xPosition + b.xFraction / 65536f;
+                float fullYcoord = b.yPosition + b.yFraction / 65536f;
+                float fullZcoord = b.zPosition + b.zFraction / 65536f;
+                Clipboard.SetText($"{fullXcoord}, {fullYcoord}, {fullZcoord}");
+            }
+        }
     }
 }
