@@ -27,6 +27,8 @@ using static DSPRE.ROMFiles.SpeciesFile;
 using System.Reflection;
 using System.ComponentModel;
 using DSPRE.Editors;
+using System.Xml;
+using Newtonsoft.Json;
 
 namespace DSPRE {
 
@@ -9917,18 +9919,66 @@ namespace DSPRE {
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //var buildingsList = GetBuildingsList(false);
-
+            List<BuildingExport> buildings = new List<BuildingExport>();
+            
             for (int i = 0; i < currentMapFile.buildings.Count; i++)
             {
-                currentMapFile.buildings[i].modelID = (uint)buildIndexComboBox.SelectedIndex;
-                currentMapFile.buildings[i].LoadModelData(romInfo.GetBuildingModelsDirPath(interiorbldRadioButton.Checked));
+                uint id = currentMapFile.buildings[i].modelID;
+                string baseName = (i + 1).ToString("D2") + MapHeader.nameSeparator;
+                string assumedName = buildIndexComboBox.Items[(int)id].ToString();
+
+                string finalName = ExtractModelName(assumedName);
+
+                //currentMapFile.buildings[i].modelID = (uint)buildIndexComboBox.SelectedIndex;
+                //currentMapFile.buildings[i].LoadModelData(romInfo.GetBuildingModelsDirPath(interiorbldRadioButton.Checked));
                 var b = currentMapFile.buildings[i];
                 float fullXcoord = b.xPosition + b.xFraction / 65536f;
                 float fullYcoord = b.yPosition + b.yFraction / 65536f;
                 float fullZcoord = b.zPosition + b.zFraction / 65536f;
-                Clipboard.SetText($"{fullXcoord}, {fullYcoord}, {fullZcoord}");
+
+                if (b.NSBMDFile.models.Length > 1)
+                    Console.WriteLine($"There was apparently more than 1 model in the building got: {b.NSBMDFile.models.Length}");
+
+                buildings.Add(new BuildingExport()
+                {
+                    name = finalName,
+                    x = fullXcoord.ToString(),
+                    y = fullYcoord.ToString(),
+                    z = fullZcoord.ToString()
+                });
             }
+
+            string json = JsonConvert.SerializeObject(buildings);
+            Console.WriteLine(json);
+            Clipboard.SetText(json);
+        }
+
+        private string ExtractModelName(string input)
+        {
+            int closingBracketIndex = input.IndexOf(']')+2;
+
+            if (closingBracketIndex != -1)
+            {
+                string substringAfterBracket = input.Substring(closingBracketIndex);
+                string trimmedResult = substringAfterBracket.Trim();
+                int nullCharIndex = trimmedResult.IndexOf('\0');
+
+                if (nullCharIndex != -1)
+                {
+                    return trimmedResult.Substring(0, nullCharIndex).Trim();
+                }
+
+                return trimmedResult;
+            }
+            return input;
+        }
+
+        public class BuildingExport
+        {
+            public string name;
+            public string x;
+            public string y;
+            public string z;
         }
     }
 }
