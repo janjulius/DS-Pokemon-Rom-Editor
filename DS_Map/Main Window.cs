@@ -3965,7 +3965,7 @@ namespace DSPRE {
 
             currentMapFile.ImportBuildings(File.ReadAllBytes(ib.FileName));
             FillBuildingsBox();
-            if (buildingsListBox.Items.Count > 0){ buildingsListBox.SelectedIndex = 0; }
+            if (buildingsListBox.Items.Count > 0) { buildingsListBox.SelectedIndex = 0; }
 
             for (int i = 0; i < currentMapFile.buildings.Count; i++) {
                 currentMapFile.buildings[i].LoadModelData(romInfo.GetBuildingModelsDirPath(interiorbldRadioButton.Checked)); // Load building nsbmd
@@ -6283,7 +6283,7 @@ namespace DSPRE {
 
         private void owTrainerComboBox_SelectedIndexChanged(object sender, EventArgs e) {
             ushort scriptNum = (ushort)(owTrainerComboBox.SelectedIndex + (owPartnerTrainerCheckBox.Checked ? 4999 : 2999));
-            if (owTrainerComboBox.SelectedIndex > trainerFunnyScriptNumber - 1 ) {
+            if (owTrainerComboBox.SelectedIndex > trainerFunnyScriptNumber - 1) {
                 scriptNum++;
             }
             owScriptNumericUpDown.Value = scriptNum;
@@ -8329,12 +8329,12 @@ namespace DSPRE {
             if (trainerNameTextBox.Text.Length > RomInfo.trainerNameMaxLen - 1) { //Subtract 1 to account for special end character. 
                 //Expose a smaller limit to the user
                 if (RomInfo.trainerNameLenOffset >= 0) {
-                    MessageBox.Show($"Trainer File saved successfully. However:\nYou attempted to save a Trainer whose name exceeds {RomInfo.trainerNameMaxLen-1} characters.\nThis may lead to issues in game." +
+                    MessageBox.Show($"Trainer File saved successfully. However:\nYou attempted to save a Trainer whose name exceeds {RomInfo.trainerNameMaxLen - 1} characters.\nThis may lead to issues in game." +
                         (PatchToolboxDialog.flag_TrainerNamesExpanded ? "\n\nIt's recommended that you use a shorter name." : "\n\nRefer to the Patch Toolbox to extend Trainer names."),
                         "Saved successfully, but...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 } else {
                     MessageBox.Show($"Trainer File saved successfully. However:\nThe Trainer name length could not be safely determined for this ROM.\n" +
-                        $"You attempted to save a Trainer whose name exceeds {RomInfo.trainerNameMaxLen-1} characters.\nThis will most likely lead to issues in game.",
+                        $"You attempted to save a Trainer whose name exceeds {RomInfo.trainerNameMaxLen - 1} characters.\nThis will most likely lead to issues in game.",
                         "Saved successfully, but...", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             } else {
@@ -8610,7 +8610,7 @@ namespace DSPRE {
             (string ability1, string ability2) = getPokemonAbilityNames(partyPokemonComboboxList[partyPokemonPosition].SelectedIndex);
             partyAbilityComboBoxList[partyPokemonPosition].Items.Clear();
             partyAbilityComboBoxList[partyPokemonPosition].Items.Add(ability1);
-            
+
             //if the name " -" is returned for ability 2 then there is no ability 2
             if (ability2.Equals(" -") || gameFamily != GameFamilies.HGSS) {
                 partyAbilityComboBoxList[partyPokemonPosition].Enabled = false;
@@ -9920,7 +9920,7 @@ namespace DSPRE {
         private void button1_Click(object sender, EventArgs e)
         {
             List<BuildingExport> buildings = new List<BuildingExport>();
-            
+
             for (int i = 0; i < currentMapFile.buildings.Count; i++)
             {
                 uint id = currentMapFile.buildings[i].modelID;
@@ -9955,7 +9955,7 @@ namespace DSPRE {
 
         private string ExtractModelName(string input)
         {
-            int closingBracketIndex = input.IndexOf(']')+2;
+            int closingBracketIndex = input.IndexOf(']') + 2;
 
             if (closingBracketIndex != -1)
             {
@@ -9979,6 +9979,82 @@ namespace DSPRE {
             public string x;
             public string y;
             public string z;
+        }
+
+        private void CopyMapNameButton_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetText(TrimMapName(selectMapComboBox.SelectedItem.ToString()));
+        }
+
+        private string TrimMapName(string selectMapComboName)
+        {
+            int closingBracketIndex = 6;
+
+            if (closingBracketIndex != -1)
+            {
+                string substringAfterBracket = selectMapComboName.Substring(closingBracketIndex);
+                string trimmedResult = substringAfterBracket.Trim();
+                int nullCharIndex = trimmedResult.IndexOf('\0');
+
+                if (nullCharIndex != -1)
+                {
+                    return trimmedResult.Substring(0, nullCharIndex).Trim();
+                }
+
+                return trimmedResult;
+            }
+            return selectMapComboName;
+        }
+
+        private void mapEditorTabPage_Click(object sender, EventArgs e)
+        {
+        }
+
+        public class InstanceMapExport
+        {
+            public string name;
+            public List<BuildingExport> interior = new List<BuildingExport>();
+        }
+
+        private void MapAndInteriorJsonExportButton_Click(object sender, EventArgs e)
+        {
+
+            string mapName = TrimMapName(selectMapComboBox.SelectedItem.ToString());
+            List<BuildingExport> buildings = new List<BuildingExport>();
+
+            for (int i = 0; i < currentMapFile.buildings.Count; i++)
+            {
+                uint id = currentMapFile.buildings[i].modelID;
+                string baseName = (i + 1).ToString("D2") + MapHeader.nameSeparator;
+                string assumedName = buildIndexComboBox.Items[(int)id].ToString();
+
+                string finalName = ExtractModelName(assumedName);
+
+                //currentMapFile.buildings[i].modelID = (uint)buildIndexComboBox.SelectedIndex;
+                //currentMapFile.buildings[i].LoadModelData(romInfo.GetBuildingModelsDirPath(interiorbldRadioButton.Checked));
+                var b = currentMapFile.buildings[i];
+                float fullXcoord = b.xPosition + b.xFraction / 65536f;
+                float fullYcoord = b.yPosition + b.yFraction / 65536f;
+                float fullZcoord = b.zPosition + b.zFraction / 65536f;
+
+                if (b.NSBMDFile.models.Length > 1)
+                    Console.WriteLine($"There was apparently more than 1 model in the building got: {b.NSBMDFile.models.Length}");
+
+                buildings.Add(new BuildingExport()
+                {
+                    name = finalName,
+                    x = fullXcoord.ToString(),
+                    y = fullYcoord.ToString(),
+                    z = fullZcoord.ToString()
+                });
+            }
+            string json = JsonConvert.SerializeObject(new InstanceMapExport()
+            {
+                name = mapName,
+                interior = buildings
+            });
+            Console.WriteLine(json);
+            Clipboard.SetText(json);
         }
     }
 }
